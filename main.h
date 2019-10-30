@@ -19,6 +19,6 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#include "Window.h"
+#include "Window.hpp"
 
 #endif /* main_h */

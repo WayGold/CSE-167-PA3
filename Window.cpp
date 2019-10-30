@@ -16,10 +16,20 @@ int Window::mode = 1;
 const char* Window::windowTitle = "CSE 167 PA3";
 
 // Objects to display.
+Transform* Window::root;
+Transform* Window::leftArm;
+Transform* Window::rightArm;
+Transform* Window::leftLeg;
+Transform* Window::rightLeg;
+Transform* Window::tohead;
+Transform* Window::tobody;
 
-
-
-// The object currently displaying.
+Geometry* Window::body;
+Geometry* Window::limb;
+Geometry* Window::head;
+Geometry* Window::eyeball;
+Geometry* Window::antenna;
+Geometry* Window::sphere;
 
 
 glm::mat4 Window::projection; // Projection matrix.
@@ -27,6 +37,7 @@ glm::mat4 Window::projection; // Projection matrix.
 glm::vec3 Window::eye(0, 0, 20); // Camera position.
 glm::vec3 Window::center(0, 0, 0); // The point we are looking at.
 glm::vec3 Window::up(0, 1, 0); // The up direction of the camera.
+
 glm::vec3 Window::lastPoint;
 glm::vec3 Window::curPos;
 glm::vec3 Window::rotAxis;
@@ -71,15 +82,11 @@ bool Window::initializeProgram() {
     projectionLoc = glGetUniformLocation(program, "projection");
     viewLoc = glGetUniformLocation(program, "view");
     modelLoc = glGetUniformLocation(program, "model");
-    colorLoc = glGetUniformLocation(program, "color");
     viewPos = glGetUniformLocation(program, "viewPos");
     light_position = glGetUniformLocation(program, "lightPos");
     light_linear = glGetUniformLocation(program, "light_linear");
     light_color = glGetUniformLocation(program, "lightColor");
     obj_color = glGetUniformLocation(program, "objectColor");
-    material_diffuse = glGetUniformLocation(program, "material.diffuse");
-    material_specular = glGetUniformLocation(program, "material.specular");
-    material_shininess  = glGetUniformLocation(program, "material.shininess");
     flag = glGetUniformLocation(program, "flag");
     
     event = 0;
@@ -89,55 +96,66 @@ bool Window::initializeProgram() {
 
 bool Window::initializeObjects()
 {
-    // Create a cube of size 5.
-    cube = new Cube(5.0f);
-    // Create a point cloud consisting of cube vertices.
-    cubePoints = new PointCloud("foo", 100);
+    glm::mat4 LAtrans = glm::translate(glm::vec3(2.0, 0.0, 0.0)) * glm::scale(glm::vec3(0.5f, 0.5f, 0.5f)) * glm::mat4(1);
     
-    // BEAR CONFIG
-    bear = new PointCloud("bear.obj", 0.25);
-    bear->set_diffuse(glm::vec3(1.0f, 1.0f, 1.0f));
-    bear->set_specular(glm::vec3(0.0f, 0.0f, 0.0f));
-    bear->set_shininess(0.0f);
-    bear->setColor(glm::vec3(0.8f, 0.5f, 0.0f));
+    std::cerr << "Left arm transform matrix: " << glm::to_string(LAtrans) << std::endl;
+    //Transform
+    root = new Transform("root", glm::mat4(1));
+    leftArm = new Transform("leftArm", LAtrans);
+    tobody = new Transform("tobody", glm::scale(glm::vec3(0.3f, 0.3f, 0.3f)));
     
-    // DRAGON  CONFIG
-    dragon = new PointCloud("dragon.obj", 0.25);
-    dragon->set_diffuse(glm::vec3(0.0f, 0.0f,  0.0f));
-    dragon->set_specular(glm::vec3(1.0f, 1.0f, 1.0f));
-    dragon->set_shininess(128.0f);
-    dragon->setColor(glm::vec3(0.3f, 0.4f, 1.0f));
+    //Geometry
+    body = new Geometry("body");
+    limb = new Geometry("limb");
+    head = new Geometry("head");
+    eyeball = new Geometry("eyeball");
+    antenna = new Geometry("antenna");
+    sphere = new Geometry("sphere");
     
-    // BUNNY CONFIG
-    bunny = new PointCloud("bunny.obj", 0.25);
-    bunny->set_diffuse(glm::vec3(1.0f, 1.0f,  1.0f));
-    bunny->set_specular(glm::vec3(1.0f, 1.0f,  1.0f));
-    bunny->set_shininess(128.0f);
-    bunny->setColor(glm::vec3(0.1f, 0.8f, 0.5f));
+    body->loadModel("body_s.obj");
+    body->set_diffuse(glm::vec3(1.0f, 1.0f, 1.0f));
+    body->set_specular(glm::vec3(0.0f, 0.0f, 0.0f));
+    body->set_shininess(0.0f);
+    body->setColor(glm::vec3(0.8f, 0.5f, 0.0f));
     
-    //cat = new PointCloud("cat.obj", 10);
+    limb->loadModel("limb_s.obj");
+    limb->setColor(glm::vec3(0.8f, 0.5f, 0.0f));
     
-    sphere = new PointCloud("sphere.obj", 0.25);
-    // sphere color = light color
+    head->loadModel("head_s.obj");
+    head->setColor(glm::vec3(0.8f, 0.5f, 0.0f));
+    
+    eyeball->loadModel("eyeball_s.obj");
+    eyeball->setColor(glm::vec3(0.8f, 0.5f, 0.0f));
+    
+    antenna->loadModel("antenna_s.obj");
+    antenna->setColor(glm::vec3(0.8f, 0.5f, 0.0f));
+    
+    // light src
+    sphere->loadModel("sphere.obj");
     sphere->setColor(glm::vec3(1.0f, 1.0f, 1.0f));
     sphere->set_diffuse(glm::vec3(1.0f, 1.0f,  1.0f));
     sphere->set_specular(glm::vec3(1.0f, 1.0f,  1.0f));
     sphere->set_shininess(1.0f);
-    
     sphere->scale(glm::scale(glm::vec3(0.05f, 0.05f, 0.05f)));
     sphere->translate(glm::translate(lightPos));
     
-    // Set cube to be the first to display
-    currentObj = bear;
-
+    // building scene graph
+    root->addChild(leftArm);
+    root->addChild(tobody);
+    
+    leftArm->addChild(limb);
+    tobody->addChild(body);
+    
+    root->addChild(sphere);
+    //root->addChild(head);
+    
     return true;
 }
 
 void Window::cleanUp()
 {
     // Deallcoate the objects.
-    delete cube;
-    delete cubePoints;
+    delete root;
 
     // Delete the shader program.
     glDeleteProgram(program);
@@ -220,56 +238,27 @@ void Window::resizeCallback(GLFWwindow* window, int width, int height)
 void Window::idleCallback()
 {
     // Perform any updates as necessary.
-    //currentObj->update();
+    //root->update();
 }
 
 void Window::displayCallback(GLFWwindow* window)
 {
     // Clear the color and depth buffers.
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    // Specify the values of the uniform variables we are going to use.
-    glm::mat4 model = currentObj->getModel();
-    glm::vec3 color = currentObj->getColor();
-    glm::vec3 diffuse = currentObj->get_diffuse();
-    glm::vec3 specular = currentObj->get_specular();
-    float shininess = currentObj->get_shininess();
     
     glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
     glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
-    glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-    glUniform3fv(colorLoc, 1, glm::value_ptr(color));
     
     // light properties
     glUniform3fv(light_position, 1, glm::value_ptr(lightPos));
     glUniform3fv(viewPos, 1, glm::value_ptr(eye));
     glUniform1f(light_linear, 0.09f);
     glUniform3fv(light_color, 1, glm::value_ptr(glm::vec3(0.0f, 0.5f, 0.9f)));
-    glUniform3fv(obj_color, 1, glm::value_ptr(color));
-    
-    // material properties
-    glUniform3fv(material_diffuse, 1, glm::value_ptr(diffuse));
-    glUniform3fv(material_specular, 1, glm::value_ptr(specular));
-    glUniform1f(material_shininess, shininess);
     glUniform1i(flag, flag_n);
 
     // Render the object.
-    currentObj->draw();
-    
-    glm::mat4 sphere_model = sphere->getModel();
-    glm::vec3 sphere_color = sphere->getColor();
-    glm::vec3 sphere_diffuse = sphere->get_diffuse();
-    glm::vec3 sphere_specular = sphere->get_specular();
-    float sphere_shininess = sphere->get_shininess();
-    
-    glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(sphere_model));
-    glUniform3fv(obj_color, 1, glm::value_ptr(sphere_color));
-    glUniform3fv(material_diffuse, 1, glm::value_ptr(sphere_diffuse));
-    glUniform3fv(material_specular, 1, glm::value_ptr(sphere_specular));
-    glUniform1f(material_shininess, sphere_shininess);
+    root->draw(program, glm::mat4(1));
 
-    sphere->draw();
-    
     // Gets events, including input such as keyboard and mouse or window resizing.
     glfwPollEvents();
     // Swap buffers.
@@ -314,35 +303,6 @@ void Window::keyCallback(GLFWwindow* window, int key, int scancode, int action, 
             }
             
             break;
-        
-        case GLFW_KEY_P:
-            // Point size adjustment key 'P' pressed
-            // Uppercase
-            if(mods == GLFW_MOD_SHIFT){
-                currentObj->updatePointSize(1);
-            }
-            // Lowercase
-            else{
-                currentObj->updatePointSize(-1);
-            }
-                
-            break;
-            
-        case GLFW_KEY_F1:
-                currentObj = bear;
-                break;
-                
-        case GLFW_KEY_F2:
-                currentObj = bunny;
-                break;
-                
-        case GLFW_KEY_F3:
-                currentObj = dragon;
-                break;
-                
-        case GLFW_KEY_F4:
-                currentObj = cat;
-                break;
                 
         default:
             break;
@@ -351,52 +311,17 @@ void Window::keyCallback(GLFWwindow* window, int key, int scancode, int action, 
 }
 
 void Window::scroll_callback(GLFWwindow* window, double xoffset, double yoffset){
-    switch (mode) {
-        case 1:{
-            // Scroll up
-            if(yoffset > 0){
-                currentObj->scale(1);
-            }
-            // Scroll down
-            else{
-                currentObj->scale(0);
-            }
-            break;
-        }
-        case 2:{
-            glm::vec3 direction = glm::normalize(currentObj->calc_center() - lightPos);
-            
-            if(yoffset > 0){
-                sphere->translate(glm::translate(-direction));
-                lightPos = sphere->getModel() * glm::vec4(0, 0, 0, 1);
-            }
-            else{
-                sphere->translate(glm::translate(direction));
-                lightPos = sphere->getModel() * glm::vec4(0, 0, 0, 1);
-            }
-            
-            break;
-        }
-        case 3:{
-            glm::vec3 direction = glm::normalize(currentObj->calc_center() - lightPos);
-            
-            if(yoffset > 0){
-                sphere->translate(glm::translate(-direction));
-                lightPos = sphere->getModel() * glm::vec4(0, 0, 0, 1);
-                currentObj->scale(1);
-            }
-            else{
-                sphere->translate(glm::translate(direction));
-                lightPos = sphere->getModel() * glm::vec4(0, 0, 0, 1);
-                currentObj->scale(0);
-            }
-            
-            break;
-        }
-        default:
-            break;
-    }
     
+    glm::vec3 direction = glm::normalize(glm::vec3(0, 0, 0) - lightPos);
+    
+    if(yoffset > 0){
+        sphere->translate(glm::translate(-direction));
+        lightPos = sphere->getModel() * glm::vec4(0, 0, 0, 1);
+    }
+    else{
+        sphere->translate(glm::translate(direction));
+        lightPos = sphere->getModel() * glm::vec4(0, 0, 0, 1);
+    }
 }
 
 void Window::cursor_callback(GLFWwindow* window, double xpos, double ypos){
@@ -422,8 +347,13 @@ void Window::cursor_callback(GLFWwindow* window, double xpos, double ypos){
     /* Cross product to get the rotation axis, but it's still in camera coordinate */
     rotAxis  = glm::cross(lastPoint, curPos);
     
+    // move camera
     if(mode == 1){
-        currentObj->rotate(glm::rotate(glm::degrees(angle) * 0.05f, rotAxis));
+//        currentObj->rotate(glm::rotate(glm::degrees(angle) * 0.05f, rotAxis));
+        glm::vec3 camDirec = glm::normalize(eye - center);
+        camDirec = glm::vec3(glm::rotate(glm::degrees(angle) * 0.05f, rotAxis) * glm::vec4(camDirec.x, camDirec.y, camDirec.z, 0.0));
+        //view = glm::lookAt(eye, , up);
+        glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
     }
     else if(mode == 2){
         sphere->rotate(glm::rotate(glm::degrees(angle) * 0.05f, rotAxis));
@@ -433,15 +363,7 @@ void Window::cursor_callback(GLFWwindow* window, double xpos, double ypos){
         lightPos.y = rotLight.y;
         lightPos.z = rotLight.z;
     }
-    else{
-        currentObj->rotate(glm::rotate(glm::degrees(angle) * 0.05f, rotAxis));
-        sphere->rotate(glm::rotate(glm::degrees(angle) * 0.05f, rotAxis));
-        glm::vec4 rotLight = glm::vec4(lightPos.x, lightPos.y, lightPos.z, 1.0f);
-        rotLight = glm::rotate(glm::degrees(angle) * 0.05f, rotAxis) * rotLight;
-        lightPos.x = rotLight.x;
-        lightPos.y = rotLight.y;
-        lightPos.z = rotLight.z;
-    }
+    
     glm::vec2 point = glm::vec2(xpos, ypos);
            
     // get world coord of first point click

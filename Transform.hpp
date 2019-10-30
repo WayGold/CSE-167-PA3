@@ -15,16 +15,17 @@
 class Transform : public Node{
 
 private:
-    glm::mat4 M;
+    glm::mat4 T;
+    std::list<Node*> children;
     
 public:
-    Transform(std::string name, Node* parent, glm::mat4 T);
+    Transform(std::string name, glm::mat4 T);
     ~Transform();
     
     void addChild(Node* input);
     
-    void draw(glm::mat4 C);
-    void update();
+    void draw(GLuint shaderProgram, glm::mat4 C);
+    void update(glm::mat4 C);
 };
 
 #endif /* Transform_hpp */

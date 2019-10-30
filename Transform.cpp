@@ -8,25 +8,33 @@
 
 #include "Transform.hpp"
 
-Transform::Transform(std::string name, Node* parent, glm::mat4 T){
+Transform::Transform(std::string name, glm::mat4 T){
     this->name = name;
-    this->parent = parent;
-    M = T;
+    this->T = T;
 }
 
 Transform::~Transform(){
     for(std::list<Node*>::iterator it = children.begin(); it != children.end(); ++it){
-        delete(*it);
+        if(*it != nullptr){
+            //delete(*it);
+        }
     }
 }
 
-void Transform::draw(glm::mat4 C){
-    glm::mat4 M_new = C * M;
+void Transform::draw(GLuint shaderProgram, glm::mat4 C){
+    glm::mat4 M_new = C * T;
     for(std::list<Node*>::iterator it = children.begin(); it != children.end(); ++it){
-        (*it)->draw(M_new);
+        std::cerr << "calling draw on: " << (*it)->getName() << std::endl;
+        (*it)->draw(shaderProgram, M_new);
     }
 }
 
-void Transform::addChild(Node *input){
+void Transform::addChild(Node* input){
+    std::cerr << "Adding child: " << input->getName() << " to " << this->getName() << std::endl;
+    input->setParent(this);
     children.push_back(input);
+}
+
+void Transform::update(glm::mat4 C){
+    
 }

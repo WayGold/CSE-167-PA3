@@ -24,10 +24,10 @@
 #include <vector>
 #include <memory>
 
-#include "Object.h"
-#include "Cube.h"
-#include "PointCloud.h"
-#include "shader.h"
+#include "Node.hpp"
+#include "Transform.hpp"
+#include "Geometry.hpp"
+#include "shader.hpp"
 
 class Window
 {
@@ -39,14 +39,10 @@ public:
     static int mode;
     
     static const char* windowTitle;
-    static Cube* cube;
-    static PointCloud * cubePoints;
-    static PointCloud * bear;
-    static PointCloud * bunny;
-    static PointCloud * dragon;
-    static PointCloud * cat;
-    static PointCloud * sphere;
-    static PointCloud * currentObj;
+    
+    static Transform* root, *leftArm, *rightArm, *leftLeg, *rightLeg, *tohead, *tobody;
+    static Geometry *body, *limb, *head, *eyeball, *antenna, *sphere;
+    
     static glm::mat4 projection;
     static glm::mat4 view;
     static glm::vec3 eye, center, up, lastPoint, curPos, rotAxis;

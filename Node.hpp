@@ -8,21 +8,32 @@
 #endif
 
 #include <glm/glm.hpp>
+#include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/transform.hpp>
 #include <vector>
 #include <string>
 #include <list>
+#include <iostream>
+#include <stdio.h>
+#include "glm/gtx/string_cast.hpp"
 
 class Node {
     
 protected:
     std::string name;
     Node* parent;
-    std::list<Node*> children;
 
 public:
-    virtual void draw(glm::mat4 C) = 0;
-    virtual void update() = 0;
+    virtual void draw(GLuint shaderProgram, glm::mat4 C) = 0;
+    virtual void update(glm::mat4 C) = 0;
+    
+    void setParent(Node* input){
+        this->parent = input;
+    };
+    
+    std::string getName(){
+        return this->name;
+    };
 };
 
 #endif
