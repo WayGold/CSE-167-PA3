@@ -11,12 +11,15 @@
 
 #include <stdio.h>
 #include "Node.hpp"
+#include "Geometry.hpp"
 
 class Transform : public Node{
 
 private:
     glm::mat4 T;
     std::list<Node*> children;
+    glm::vec3 center;
+    float radius = 5.0f;
     
 public:
     Transform(std::string name, glm::mat4 T);
@@ -24,8 +27,11 @@ public:
     
     void addChild(Node* input);
     
-    void draw(GLuint shaderProgram, glm::mat4 C);
+    void draw(GLuint shaderProgram, glm::mat4 C, std::vector<glm::vec3> all_center, std::vector<glm::vec3> all_norm, int & r_count, bool flag);
     void update(glm::mat4 C);
+    void set_center(glm::vec3 point);
+    glm::vec3 get_center();
+    float get_radius();
 };
 
 #endif /* Transform_hpp */

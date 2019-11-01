@@ -13,16 +13,41 @@ int Window::height;
 int Window::event;
 int Window::flag_n = 1;
 int Window::mode = 1;
+int Window::r_count = 0;
+double Window::counter = 0;
+double Window::fov = 60;
+double Window::fake_fov = fov;
+double Window::near = 1.0;
+double Window::far = 1000.0;
+double Window::Hnear;
+double Window::Hfar;
+double Window::Wnear;
+double Window::Wfar;
+double Window::midDis, Window::Hmid, Window::Wmid;
+bool Window::bbox = false;
+bool Window::culling = true;
+bool Window::culling_debug = true;
 const char* Window::windowTitle = "CSE 167 PA3";
 
 // Objects to display.
 Transform* Window::root;
+Transform* Window::god;
 Transform* Window::leftArm;
 Transform* Window::rightArm;
 Transform* Window::leftLeg;
 Transform* Window::rightLeg;
 Transform* Window::tohead;
 Transform* Window::tobody;
+Transform* Window::sgleye;
+Transform* Window::toCenter;
+
+Transform* Window::paddUp;
+Transform* Window::paddDown;
+Transform* Window::paddDepth;
+Transform* Window::paddLeft;
+Transform* Window::paddRight;
+
+std::vector<Transform*> Window::all_nodes;
 
 Geometry* Window::body;
 Geometry* Window::limb;
@@ -41,6 +66,7 @@ glm::vec3 Window::up(0, 1, 0); // The up direction of the camera.
 glm::vec3 Window::lastPoint;
 glm::vec3 Window::curPos;
 glm::vec3 Window::rotAxis;
+glm::vec3 Window::fc, Window::ftl, Window::ftr, Window::fbl, Window::fbr, Window::nc, Window::ntl, Window::ntr, Window::nbl,             Window::nbr, Window::Nnormal, Window::Fnormal, Window::Lnormal, Window::Rnormal, Window::Unormal, Window::Dnormal,             Window::lc, Window::rc, Window::uc, Window::dc, Window::mc;
 
 glm::vec3 lightPos(1.0f, 1.0f, 8.0f);
 
@@ -96,13 +122,30 @@ bool Window::initializeProgram() {
 
 bool Window::initializeObjects()
 {
-    glm::mat4 LAtrans = glm::translate(glm::vec3(2.0, 0.0, 0.0)) * glm::scale(glm::vec3(0.5f, 0.5f, 0.5f)) * glm::mat4(1);
+    glm::mat4 RAtrans = glm::translate(glm::vec3(3.0, 0.0, 1.0)) * glm::scale(glm::vec3(0.15f, 0.15f, 0.15f)) * glm::mat4(1);
+    glm::mat4 LAtrans = glm::translate(glm::vec3(-3.0, 0.0, 1.0)) * glm::scale(glm::vec3(0.15f, 0.15f, 0.15f)) * glm::mat4(1);
+    glm::mat4 HDtrans = glm::translate(glm::vec3(0.0, 2.6, 0.0)) * glm::scale(glm::vec3(0.2f, 0.2f, 0.2f)) * glm::mat4(1);
+    glm::mat4 RLtrans = glm::translate(glm::vec3(1.0, -3.0, 1.0)) * glm::scale(glm::vec3(0.15f, 0.15f, 0.15f)) * glm::mat4(1);
+    glm::mat4 LLtrans = glm::translate(glm::vec3(-1.0, -3.0, 1.0)) * glm::scale(glm::vec3(0.15f, 0.15f, 0.15f)) * glm::mat4(1);
+    glm::mat4 Etrans = glm::translate(glm::vec3(0.0, 3.0, 9.0)) * glm::scale(glm::vec3(0.1f, 0.1f, 0.1f)) * glm::mat4(1);
     
-    std::cerr << "Left arm transform matrix: " << glm::to_string(LAtrans) << std::endl;
+    glm::mat4 padd_Right = glm::translate(glm::vec3(25.0, 0.0, 0.0)) * glm::mat4(1);
+    glm::mat4 padd_Left = glm::translate(glm::vec3(-25.0, 0.0, 0.0)) * glm::mat4(1);
+    glm::mat4 padd_Up = glm::translate(glm::vec3(0.0, 0.0, 0.0)) * glm::mat4(1);
+    glm::mat4 padd_Depth = glm::translate(glm::vec3(0.0, 0.0, -25.0)) * glm::mat4(1);
+    
+    //std::cerr << "Left arm transform matrix: " << glm::to_string(RAtrans) << std::endl;
     //Transform
     root = new Transform("root", glm::mat4(1));
-    leftArm = new Transform("leftArm", LAtrans);
+    god = new Transform("god", glm::mat4(1));
+    rightArm = new Transform("RightArm", RAtrans);
+    leftArm = new Transform("LeftArm", LAtrans);
     tobody = new Transform("tobody", glm::scale(glm::vec3(0.3f, 0.3f, 0.3f)));
+    tohead = new Transform("tohead", HDtrans);
+    leftLeg = new Transform("leftLeg", LLtrans);
+    rightLeg = new Transform("rightLeg", RLtrans);
+    sgleye = new Transform("eye", Etrans);
+    
     
     //Geometry
     body = new Geometry("body");
@@ -116,16 +159,16 @@ bool Window::initializeObjects()
     body->set_diffuse(glm::vec3(1.0f, 1.0f, 1.0f));
     body->set_specular(glm::vec3(0.0f, 0.0f, 0.0f));
     body->set_shininess(0.0f);
-    body->setColor(glm::vec3(0.8f, 0.5f, 0.0f));
+    body->setColor(glm::vec3(0.8f, 0.0f, 0.5f));
     
     limb->loadModel("limb_s.obj");
-    limb->setColor(glm::vec3(0.8f, 0.5f, 0.0f));
+    limb->setColor(glm::vec3(0.3f, 0.3f, 0.3f));
     
     head->loadModel("head_s.obj");
-    head->setColor(glm::vec3(0.8f, 0.5f, 0.0f));
+    head->setColor(glm::vec3(0.8f, 0.0f, 0.5f));
     
     eyeball->loadModel("eyeball_s.obj");
-    eyeball->setColor(glm::vec3(0.8f, 0.5f, 0.0f));
+    eyeball->setColor(glm::vec3(0.0f, 0.0f, 0.0f));
     
     antenna->loadModel("antenna_s.obj");
     antenna->setColor(glm::vec3(0.8f, 0.5f, 0.0f));
@@ -136,18 +179,71 @@ bool Window::initializeObjects()
     sphere->set_diffuse(glm::vec3(1.0f, 1.0f,  1.0f));
     sphere->set_specular(glm::vec3(1.0f, 1.0f,  1.0f));
     sphere->set_shininess(1.0f);
-    sphere->scale(glm::scale(glm::vec3(0.05f, 0.05f, 0.05f)));
-    sphere->translate(glm::translate(lightPos));
+    sphere->scale(glm::scale(glm::vec3(0.5f, 0.5f, 0.5f)));
     
     // building scene graph
+    root->addChild(rightArm);
     root->addChild(leftArm);
     root->addChild(tobody);
+    root->addChild(tohead);
+    root->addChild(rightLeg);
+    root->addChild(leftLeg);
     
+    rightArm->addChild(limb);
     leftArm->addChild(limb);
     tobody->addChild(body);
+    tohead->addChild(head);
+    leftLeg->addChild(limb);
+    rightLeg->addChild(limb);
+    tohead->addChild(sgleye);
+    sgleye->addChild(eyeball);
     
-    root->addChild(sphere);
-    //root->addChild(head);
+    // setting center and adding the bounding sphere
+    root->set_center(body->calc_center());
+    
+    glm::mat4 Ctrans = glm::translate(body->calc_center());
+    toCenter = new Transform("toCenter", Ctrans);
+    root->addChild(toCenter);
+    toCenter->addChild(sphere);
+    
+    /* START GENERATING 100 ROBOTS*/
+    god->addChild(root);
+    root->set_center(body->calc_center());
+    
+    // ptr to keep track of operation
+    Transform* current = god;
+    
+    // loop to create 100 robots
+    for(int i = 0; i < 10; i++){
+        //set center ptr to current
+        Transform* c_point = current;
+        // copy 5 to the left
+        for(int j = 0; j < 5; j++){
+            Transform* tmp = new Transform(std::to_string(i), padd_Left);
+            current->addChild(tmp);
+            tmp->addChild(root);
+            current = tmp;
+        }
+        // ptr back to center
+        current = c_point;
+        // copy 5 to the right
+        for(int j = 0; j < 4; j++){
+            Transform* tmp = new Transform(std::to_string(i), padd_Right);
+            current->addChild(tmp);
+            tmp->addChild(root);
+            current = tmp;
+        }
+        // ptr back to center
+        current = c_point;
+        if(i == 9){
+            break;
+        }
+        // move up to the next row
+        Transform* tmp = new Transform(std::to_string(i), padd_Up * padd_Depth);
+        current->addChild(tmp);
+        tmp->addChild(root);
+        current = tmp;
+    }
     
     return true;
 }
@@ -231,14 +327,50 @@ void Window::resizeCallback(GLFWwindow* window, int width, int height)
     glViewport(0, 0, width, height);
 
     // Set the projection matrix.
-    Window::projection = glm::perspective(glm::radians(60.0),
-        double(width) / (double)height, 1.0, 1000.0);
+    Window::projection = glm::perspective(glm::radians(fov),
+                                          double(width) / (double)height, near, far);
 }
 
 void Window::idleCallback()
 {
     // Perform any updates as necessary.
-    //root->update();
+    glm::mat4 trans = glm::mat4(1.0f);
+    
+    glm::mat4 ani_front = glm::rotate(trans, glm::radians(2.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+    glm::mat4 inverse_front = glm::transpose(ani_front);
+    glm::mat4 ani_back = glm::rotate(trans, glm::radians(-2.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+    glm::mat4 inverse_back = glm::transpose(ani_back);
+    
+    //std::cerr << "Value of sin(counter): " << std::sin(counter) << std::endl;
+    
+    if(counter < 10){
+        leftArm->update(ani_front);
+        rightArm->update(ani_back);
+        leftLeg->update(ani_back);
+        rightLeg->update(ani_front);
+    }
+    if(counter >= 10 && counter < 20){
+        leftArm->update(inverse_front);
+        rightArm->update(inverse_back);
+        leftLeg->update(inverse_back);
+        rightLeg->update(inverse_front);
+    }
+    if(counter >= 20 && counter < 30){
+        leftArm->update(ani_back);
+        rightArm->update(ani_front);
+        leftLeg->update(ani_front);
+        rightLeg->update(ani_back);
+    }
+    if(counter >= 30){
+        leftArm->update(inverse_back);
+        rightArm->update(inverse_front);
+        leftLeg->update(inverse_front);
+        rightLeg->update(inverse_back);
+        if(counter == 40) counter = 0;
+    }
+    counter++;
+    //std::cerr << "counter value: "<< counter << std::endl;
+
 }
 
 void Window::displayCallback(GLFWwindow* window)
@@ -255,10 +387,49 @@ void Window::displayCallback(GLFWwindow* window)
     glUniform1f(light_linear, 0.09f);
     glUniform3fv(light_color, 1, glm::value_ptr(glm::vec3(0.0f, 0.5f, 0.9f)));
     glUniform1i(flag, flag_n);
-
+    
+    Hnear = 2 * tan(fov / 2) * near;
+    Wnear = Hnear * (double(width) / (double)height);
+    
+    Hfar = 2 * tan(fov / 2) * far;
+    Wfar = Hfar * (double(width) / (double)height);
+    
+    glm::vec3 d_vec = glm::normalize(center - eye);
+    glm::vec3 right = glm::cross(up, d_vec);
+    glm::vec3 left = -right;
+    
+    lc = rc = uc = dc = eye;
+    fc = eye + d_vec * glm::vec3(far);
+    nc = eye + d_vec * glm::vec3(near);
+    
+    Nnormal = d_vec;
+    Fnormal = -d_vec;
+    Rnormal = glm::cross(up, glm::normalize((nc + right * glm::vec3(Wnear / 2)) - eye));
+    Lnormal = -glm::cross(up, glm::normalize((nc + left * glm::vec3(Wnear / 2)) - eye));
+    Unormal = glm::cross(left, glm::normalize((nc + up * glm::vec3(Hnear / 2)) - eye));
+    Dnormal = glm::cross(right, glm::normalize((nc + -up * glm::vec3(Hnear / 2)) - eye));
+    
+    std::vector<glm::vec3> all_center;
+    std::vector<glm::vec3> all_norm;
+    
+    all_center.push_back(fc);
+    all_center.push_back(nc);
+    all_center.push_back(lc);
+    all_center.push_back(rc);
+    all_center.push_back(uc);
+    all_center.push_back(dc);
+    
+    all_norm.push_back(Fnormal);
+    all_norm.push_back(Nnormal);
+    all_norm.push_back(Lnormal);
+    all_norm.push_back(Rnormal);
+    all_norm.push_back(Unormal);
+    all_norm.push_back(Dnormal);
+    
     // Render the object.
-    root->draw(program, glm::mat4(1));
-
+    god->draw(program, glm::mat4(1), all_center, all_norm, r_count, culling);
+    std::cout << "Robots rendered: " << r_count << std::endl;
+    r_count = 0;
     // Gets events, including input such as keyboard and mouse or window resizing.
     glfwPollEvents();
     // Swap buffers.
@@ -304,6 +475,18 @@ void Window::keyCallback(GLFWwindow* window, int key, int scancode, int action, 
             
             break;
                 
+        case GLFW_KEY_B:
+            bbox = !bbox;
+            break;
+        
+        case GLFW_KEY_C:
+            culling = !culling;
+            break;
+                
+        case GLFW_KEY_D:
+            culling_debug = !culling_debug;
+            break;
+                
         default:
             break;
         }
@@ -312,15 +495,41 @@ void Window::keyCallback(GLFWwindow* window, int key, int scancode, int action, 
 
 void Window::scroll_callback(GLFWwindow* window, double xoffset, double yoffset){
     
-    glm::vec3 direction = glm::normalize(glm::vec3(0, 0, 0) - lightPos);
-    
+    // Scroll up
     if(yoffset > 0){
-        sphere->translate(glm::translate(-direction));
-        lightPos = sphere->getModel() * glm::vec4(0, 0, 0, 1);
+        // Not debug mod
+        if(!culling_debug){
+            if(fov + 1 > 175) return;
+            fov = fov + 1;
+            projection = glm::perspective(glm::radians(fov), double(width) / (double)height, near, far);
+            glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
+        }
+        //debug mode
+        else{
+            fake_fov = fov;
+            if(fake_fov + 1 > 175) return;
+            fake_fov = fake_fov + 1;
+            projection = glm::perspective(glm::radians(fake_fov), double(width) / (double)height, near, far);
+            glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
+        }
     }
+    // Scroll down
     else{
-        sphere->translate(glm::translate(direction));
-        lightPos = sphere->getModel() * glm::vec4(0, 0, 0, 1);
+        //Not debug
+        if(!culling_debug){
+            if(fov - 1 < 5) return;
+            Window::fov = fov - 1;
+            Window::projection = glm::perspective(glm::radians(fov), double(width) / (double)height, near, far);
+            glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
+        }
+        //debug mode
+        else{
+            fake_fov = fov;
+            if(fake_fov - 1 < 5) return;
+            Window::fake_fov = fake_fov - 1;
+            Window::projection = glm::perspective(glm::radians(fake_fov), double(width) / (double)height, near, far);
+            glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
+        }
     }
 }
 
@@ -348,21 +557,11 @@ void Window::cursor_callback(GLFWwindow* window, double xpos, double ypos){
     rotAxis  = glm::cross(lastPoint, curPos);
     
     // move camera
-    if(mode == 1){
-//        currentObj->rotate(glm::rotate(glm::degrees(angle) * 0.05f, rotAxis));
-        glm::vec3 camDirec = glm::normalize(eye - center);
-        camDirec = glm::vec3(glm::rotate(glm::degrees(angle) * 0.05f, rotAxis) * glm::vec4(camDirec.x, camDirec.y, camDirec.z, 0.0));
-        //view = glm::lookAt(eye, , up);
-        glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
-    }
-    else if(mode == 2){
-        sphere->rotate(glm::rotate(glm::degrees(angle) * 0.05f, rotAxis));
-        glm::vec4 rotLight = glm::vec4(lightPos.x, lightPos.y, lightPos.z, 1.0f);
-        rotLight = glm::rotate(glm::degrees(angle) * 0.05f, rotAxis) * rotLight;
-        lightPos.x = rotLight.x;
-        lightPos.y = rotLight.y;
-        lightPos.z = rotLight.z;
-    }
+    glm::vec3 camDirec = glm::normalize(center - eye);
+    camDirec = glm::vec3(glm::rotate(glm::degrees(angle) * 0.05f, rotAxis) * glm::vec4(camDirec.x, camDirec.y, camDirec.z, 0.0));
+    view = glm::lookAt(eye, eye + camDirec, up);
+    center = eye + camDirec;
+    glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
     
     glm::vec2 point = glm::vec2(xpos, ypos);
            

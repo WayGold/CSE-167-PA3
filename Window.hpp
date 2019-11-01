@@ -23,6 +23,7 @@
 #include <iostream>
 #include <vector>
 #include <memory>
+#include <math.h>
 
 #include "Node.hpp"
 #include "Transform.hpp"
@@ -37,15 +38,19 @@ public:
     static int event;
     static int flag_n;
     static int mode;
+    static int r_count;
+    static double counter;
+    static double fov, fake_fov, near, far, Hnear, Hfar, Wnear, Wfar, midDis, Hmid, Wmid;
+    static bool bbox, culling, culling_debug;
     
     static const char* windowTitle;
     
-    static Transform* root, *leftArm, *rightArm, *leftLeg, *rightLeg, *tohead, *tobody;
+    static Transform* root, *god, *leftArm, *rightArm, *leftLeg, *rightLeg, *tohead, *tobody, *toCenter, *sgleye, *paddLeft, *paddRight, *paddDown, *paddUp, *paddDepth;
     static Geometry *body, *limb, *head, *eyeball, *antenna, *sphere;
-    
+    static std::vector<Transform*> all_nodes;
     static glm::mat4 projection;
     static glm::mat4 view;
-    static glm::vec3 eye, center, up, lastPoint, curPos, rotAxis;
+    static glm::vec3 eye, center, up, lastPoint, curPos, rotAxis, mc, lc, rc, uc, dc, fc, ftl, ftr, fbl, fbr, nc, ntl, ntr, nbl, nbr, Nnormal, Fnormal, Lnormal, Rnormal, Unormal, Dnormal;
     static GLuint program, projectionLoc, viewLoc, modelLoc, colorLoc, light_position, light_linear, viewPos, light_color, obj_color, material_diffuse, material_specular, material_shininess, flag;
     static GLfloat angle;
 

@@ -7,6 +7,7 @@
 //
 
 #include "Geometry.hpp"
+#include "Window.hpp"
 
 Geometry::Geometry(std::string name){
     this->name = name;
@@ -69,14 +70,12 @@ void Geometry::loadModel(std::string objFilename){
                     triangles.push_back(triangle);
                 }
                 else{
-                    std::cerr << "Enter!" << std::endl;
                     triangle.x = std::stoi(line_1.substr(0, line_1.find(delimiter_2))) - 1;
                     triangle.y = std::stoi(line_2.substr(0, line_2.find(delimiter_2))) - 1;
                     triangle.z = std::stoi(line_3.substr(0, line_3.find(delimiter_2))) - 1;
-                    std::cerr << "File: " << objFilename << ". Reading in: "<< triangle.x << " " << triangle.y << " " << triangle.z << std::endl;
+                    /*std::cerr << "File: " << objFilename << ". Reading in: "<< triangle.x << " " << triangle.y << " " << triangle.z << std::endl;*/
                     triangles.push_back(triangle);
                 }
-                
             }
             
             // Load vector normals
@@ -117,12 +116,14 @@ void Geometry::loadModel(std::string objFilename){
     glm::vec3 scale = glm::vec3(scale_factor, scale_factor, scale_factor);
     
     // Set the model matrix to an identity matrix.
-    model = glm::mat4(1);
+    this->model = glm::mat4(1);
     
     // Set the color.
     color = glm::vec3(1, 0, 0);
     
-    model = glm::scale(model, scale);
+    this->model = glm::scale(model, scale);
+    
+//    std::cerr << std::endl << "Model Matrix of: " << getName() << " after loading: " << std::endl << glm::to_string(model) << std::endl;
     
     // Generate a vertex array (VAO) and a vertex buffer objects (VBO).
     glGenVertexArrays(1, &vao);
@@ -160,12 +161,42 @@ void Geometry::loadModel(std::string objFilename){
     glBindVertexArray(0);
 }
 
-void Geometry::setModelMatrix(glm::mat4 M){
-    model = M * model;
-}
-
-void Geometry::draw(GLuint shaderProgram, glm::mat4 M){
-    std::cerr << "Drawing: " << getName() << ". With passed in Transformation matrix: " << glm::to_string(M) << std::endl;
+void Geometry::draw(GLuint shaderProgram, glm::mat4 M, std::vector<glm::vec3> all_center, std::vector<glm::vec3> all_norm, int & r_count, bool flag){
+    
+    if(name == "sphere"){
+        if(!Window::bbox) return;
+        
+        GLuint material_diffuse = glGetUniformLocation(shaderProgram, "material.diffuse");
+        GLuint material_specular = glGetUniformLocation(shaderProgram, "material.specular");
+        GLuint material_shininess  = glGetUniformLocation(shaderProgram, "material.shininess");
+        GLuint modelLoc = glGetUniformLocation(shaderProgram, "model");
+        GLuint colorLoc = glGetUniformLocation(shaderProgram, "color");
+        GLuint obj_color = glGetUniformLocation(shaderProgram, "objectColor");
+            
+        // Specify the values of the uniform variables we are going to use.
+        glm::vec3 color = getColor();
+        glm::vec3 diffuse = get_diffuse();
+        glm::vec3 specular = get_specular();
+        float shininess = get_shininess();
+            
+        //    std::cerr << "Current Model Matrix: " << glm::to_string(model) << std::endl << "Multipling Model matrix with passed in Transformations: " << glm::to_string(M) << std::endl;
+        //    std::cerr << "Drawing: " << getName() << ". With Transformed Model matrix: " << glm::to_string(model) << std::endl;
+        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(M * model));
+            
+        glUniform3fv(material_diffuse, 1, glm::value_ptr(diffuse));
+        glUniform3fv(material_specular, 1, glm::value_ptr(specular));
+        glUniform3fv(colorLoc, 1, glm::value_ptr(color));
+        glUniform1f(material_shininess, shininess);
+        glUniform3fv(obj_color, 1, glm::value_ptr(color));
+            
+        // Bind to the VAO.
+        glBindVertexArray(vao);
+        // Draw triangles
+        glDrawElements(GL_LINES, 3 * triangles.size(), GL_UNSIGNED_INT, 0);
+        // Unbind from the VAO.
+        glBindVertexArray(0);
+        return;
+    }
     
     GLuint material_diffuse = glGetUniformLocation(shaderProgram, "material.diffuse");
     GLuint material_specular = glGetUniformLocation(shaderProgram, "material.specular");
@@ -180,8 +211,9 @@ void Geometry::draw(GLuint shaderProgram, glm::mat4 M){
     glm::vec3 specular = get_specular();
     float shininess = get_shininess();
     
-    setModelMatrix(M);
-    glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+//    std::cerr << "Current Model Matrix: " << glm::to_string(model) << std::endl << "Multipling Model matrix with passed in Transformations: " << glm::to_string(M) << std::endl;
+//    std::cerr << "Drawing: " << getName() << ". With Transformed Model matrix: " << glm::to_string(model) << std::endl;
+    glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(M * model));
     
     glUniform3fv(material_diffuse, 1, glm::value_ptr(diffuse));
     glUniform3fv(material_specular, 1, glm::value_ptr(specular));

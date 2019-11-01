@@ -66,7 +66,8 @@ void main()
         diffuse   *= attenuation;
         specular *= attenuation;
             
-        result = (ambient + diffuse + specular) * objectColor;
+        //result = (ambient + diffuse + specular) * objectColor;
+        result = objectColor;
     }
     else{
         result = vec3((normalOutput.x + 1) / 2, (normalOutput.y + 1) / 2, (normalOutput.z + 1) / 2);

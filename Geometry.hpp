@@ -51,9 +51,8 @@ public:
     glm::vec3 get_specular();
     GLfloat get_shininess();
     
-    void setModelMatrix(glm::mat4 M);
     void loadModel(std::string objFilename);
-    void draw(GLuint shaderProgram, glm::mat4 M);
+    void draw(GLuint shaderProgram, glm::mat4 M, std::vector<glm::vec3> all_center, std::vector<glm::vec3> all_norm, int & r_count, bool flag);
     void update(glm::mat4 C);
     
     void set_diffuse(glm::vec3 input);

@@ -24,7 +24,7 @@ protected:
     Node* parent;
 
 public:
-    virtual void draw(GLuint shaderProgram, glm::mat4 C) = 0;
+    virtual void draw(GLuint shaderProgram, glm::mat4 C, std::vector<glm::vec3> all_center, std::vector<glm::vec3> all_norm, int & r_count, bool flag) = 0;
     virtual void update(glm::mat4 C) = 0;
     
     void setParent(Node* input){
