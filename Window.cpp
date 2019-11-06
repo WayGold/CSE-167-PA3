@@ -26,7 +26,7 @@ double Window::Wfar;
 double Window::midDis, Window::Hmid, Window::Wmid;
 bool Window::bbox = false;
 bool Window::culling = true;
-bool Window::culling_debug = true;
+bool Window::culling_debug = false;
 const char* Window::windowTitle = "CSE 167 PA3";
 
 // Objects to display.
@@ -59,7 +59,7 @@ Geometry* Window::sphere;
 
 glm::mat4 Window::projection; // Projection matrix.
 
-glm::vec3 Window::eye(0, 0, 20); // Camera position.
+glm::vec3 Window::eye(0, 5, 20); // Camera position.
 glm::vec3 Window::center(0, 0, 0); // The point we are looking at.
 glm::vec3 Window::up(0, 1, 0); // The up direction of the camera.
 
@@ -388,10 +388,12 @@ void Window::displayCallback(GLFWwindow* window)
     glUniform3fv(light_color, 1, glm::value_ptr(glm::vec3(0.0f, 0.5f, 0.9f)));
     glUniform1i(flag, flag_n);
     
-    Hnear = 2 * tan(fov / 2) * near;
+    //std::cerr << "fov: " << fov << ". With tan value: "<< glm::tan(glm::radians(fov / 2)) << std::endl;
+    
+    Hnear = 2 * glm::tan(glm::radians(fov / 2)) * near;
     Wnear = Hnear * (double(width) / (double)height);
     
-    Hfar = 2 * tan(fov / 2) * far;
+    Hfar = 2 * glm::tan(glm::radians(fov / 2)) * far;
     Wfar = Hfar * (double(width) / (double)height);
     
     glm::vec3 d_vec = glm::normalize(center - eye);
@@ -404,10 +406,10 @@ void Window::displayCallback(GLFWwindow* window)
     
     Nnormal = d_vec;
     Fnormal = -d_vec;
-    Rnormal = glm::cross(up, glm::normalize((nc + right * glm::vec3(Wnear / 2)) - eye));
-    Lnormal = -glm::cross(up, glm::normalize((nc + left * glm::vec3(Wnear / 2)) - eye));
-    Unormal = glm::cross(left, glm::normalize((nc + up * glm::vec3(Hnear / 2)) - eye));
-    Dnormal = glm::cross(right, glm::normalize((nc + -up * glm::vec3(Hnear / 2)) - eye));
+    Rnormal = -glm::cross(up, glm::normalize((nc + right * glm::vec3(Wnear / 2)) - eye));
+    Lnormal = glm::cross(up, glm::normalize((nc + left * glm::vec3(Wnear / 2)) - eye));
+    Unormal = -glm::cross(left, glm::normalize((nc + up * glm::vec3(Hnear / 2)) - eye));
+    Dnormal = -glm::cross(right, glm::normalize((nc + -up * glm::vec3(Hnear / 2)) - eye));
     
     std::vector<glm::vec3> all_center;
     std::vector<glm::vec3> all_norm;
@@ -447,21 +449,6 @@ void Window::keyCallback(GLFWwindow* window, int key, int scancode, int action, 
             // Close the window. This causes the program to also terminate.
             glfwSetWindowShouldClose(window, GL_TRUE);
             break;
-                
-        // Mode 1
-        case GLFW_KEY_1:
-            mode = 1;
-            break;
-                
-        // Mode 2
-        case GLFW_KEY_2:
-            mode = 2;
-            break;
-        
-        // Mode 3
-        case GLFW_KEY_3:
-            mode = 3;
-            break;
         
         case GLFW_KEY_N:
             if(flag_n){
@@ -497,7 +484,7 @@ void Window::scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
     
     // Scroll up
     if(yoffset > 0){
-        // Not debug mod
+        // Not debug mod - default debug value is false
         if(!culling_debug){
             if(fov + 1 > 175) return;
             fov = fov + 1;
@@ -506,7 +493,6 @@ void Window::scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
         }
         //debug mode
         else{
-            fake_fov = fov;
             if(fake_fov + 1 > 175) return;
             fake_fov = fake_fov + 1;
             projection = glm::perspective(glm::radians(fake_fov), double(width) / (double)height, near, far);
@@ -518,16 +504,15 @@ void Window::scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
         //Not debug
         if(!culling_debug){
             if(fov - 1 < 5) return;
-            Window::fov = fov - 1;
-            Window::projection = glm::perspective(glm::radians(fov), double(width) / (double)height, near, far);
+            fov = fov - 1;
+            projection = glm::perspective(glm::radians(fov), double(width) / (double)height, near, far);
             glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
         }
         //debug mode
         else{
-            fake_fov = fov;
             if(fake_fov - 1 < 5) return;
-            Window::fake_fov = fake_fov - 1;
-            Window::projection = glm::perspective(glm::radians(fake_fov), double(width) / (double)height, near, far);
+            fake_fov = fake_fov - 1;
+            projection = glm::perspective(glm::radians(fake_fov), double(width) / (double)height, near, far);
             glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
         }
     }
@@ -561,6 +546,7 @@ void Window::cursor_callback(GLFWwindow* window, double xpos, double ypos){
     camDirec = glm::vec3(glm::rotate(glm::degrees(angle) * 0.05f, rotAxis) * glm::vec4(camDirec.x, camDirec.y, camDirec.z, 0.0));
     view = glm::lookAt(eye, eye + camDirec, up);
     center = eye + camDirec;
+    
     glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
     
     glm::vec2 point = glm::vec2(xpos, ypos);

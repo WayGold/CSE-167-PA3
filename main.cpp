@@ -1,11 +1,3 @@
-//
-//  main.cpp
-//  CSE 167 PA3
-//
-//  Created by Wei Zeng on 10/27/19.
-//  Copyright © 2019 Wei Zeng. All rights reserved.
-//
-
 #include "main.h"
 
 void error_callback(int error, const char* description)
@@ -87,4 +79,3 @@ int main(void)
 
     exit(EXIT_SUCCESS);
 }
-
